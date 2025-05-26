@@ -1,0 +1,69 @@
+plugins {
+    id("org.springframework.boot") version "3.3.0" // Use the latest stable version
+    id("io.spring.dependency-management") version "1.1.5" // Use the latest stable version
+    id 'java'
+}
+
+group = 'nz.co.ats'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+
+    // Cucumber & JUnit 5
+    testImplementation 'io.cucumber:cucumber-java:7.19.0'
+    testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.19.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.1'
+    testImplementation 'org.junit.platform:junit-platform-suite:1.11.2'
+    testImplementation 'io.cucumber:cucumber-spring:7.19.0'
+
+    // Playwright
+    testImplementation 'com.microsoft.playwright:playwright:1.47.0'
+    implementation 'com.microsoft.playwright:playwright:1.47.0'
+    implementation "net.masterthought:maven-cucumber-reporting:5.8.1"
+
+    // Spring context for dependency injection in tests
+    testImplementation 'org.springframework:spring-context'
+}
+
+test {
+    useJUnitPlatform()
+}
+// Task to run Cucumber tests
+tasks.register('cucumber', Test) {
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching "nz.co.ats.runners.TestRunner"
+    }
+    // Ensure tests run after compilation
+dependsOn testClasses
+// Show test results in the console
+testLogging {
+    events "passed", "skipped", "failed"
+}
+// Ensure system properties are passed
+systemProperties System.getProperties()
+
+// Ensure Masterthought reports are generated after this task
+finalizedBy generateCucumberReport
+}
+
+tasks.register('generateCucumberReport', JavaExec) {
+    group = "reporting"
+    description = "Generates Cucumber HTML report using net.masterthought.cucumber-reporting"
+
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'nz.co.ats.CucumberReportGenerator'
+
+    args = [
+            "${buildDir}/cucumber-reports/cucumber.json",   // input JSON
+            "${buildDir}/cucumber-html-report",             // output directory
+            "selenide_demo"                                     // optional project name
+    ]
+}
